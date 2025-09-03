@@ -8,10 +8,9 @@ import java.util.UUID;
 @Component
 public class PaymentClient {
     private final RestTemplate rt = new RestTemplate();
-    // docker-compose will expose payment-service at http://payment-service:8080
     public String authorizePayment(UUID reservationId, double amount) {
         try {
-            var resp = rt.postForObject("http://payment-service:8080/payments/authorize",
+            var resp = rt.postForObject("http://payment-service:8082/payments/authorize",
                     new PaymentRequest(reservationId, amount), String.class);
             return resp;
         } catch (Exception e) {
