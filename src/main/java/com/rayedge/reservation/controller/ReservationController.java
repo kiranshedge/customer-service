@@ -1,7 +1,7 @@
 package com.rayedge.reservation.controller;
 
 import com.rayedge.reservation.dto.NotificationRequest;
-import com.rayedge.reservation.service.NotificationClient;
+import com.rayedge.reservation.service.NotificationProducerService;
 import com.rayedge.reservation.service.PaymentClient;
 import com.rayedge.reservation.Reservation;
 import com.rayedge.reservation.repository.ReservationRepository;
@@ -12,16 +12,17 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/reservations")
 public class ReservationController {
+
     private final ReservationRepository repo;
     private final PaymentClient paymentClient;
-    private final NotificationClient notificationClient;
+    private final NotificationProducerService notificationProducer;
 
     public ReservationController(ReservationRepository repo,
                                  PaymentClient paymentClient,
-                                 NotificationClient notificationClient) {
+                                 NotificationProducerService notificationProducer) {
         this.repo = repo;
         this.paymentClient = paymentClient;
-        this.notificationClient = notificationClient;
+        this.notificationProducer = notificationProducer;
     }
 
     @PostMapping
@@ -30,25 +31,27 @@ public class ReservationController {
         var saved = repo.save(r);
 
         var payResp = paymentClient.authorizePayment(saved.getId(), saved.getTotalAmount());
-        if (payResp.equals("OK")) {
+        NotificationRequest notification = new NotificationRequest();
+
+        if ("OK".equals(payResp)) {
             saved.setStatus("CONFIRMED");
             repo.save(saved);
-            NotificationRequest notification = new NotificationRequest();
             notification.setMessage("Reservation confirmed: " + saved.getId());
-            notificationClient.sendNotification(notification);
+            notificationProducer.sendNotification(notification);
             return ResponseEntity.ok(saved);
         } else {
             saved.setStatus("CANCELLED");
             repo.save(saved);
-            NotificationRequest notification = new NotificationRequest();
             notification.setMessage("Reservation failed: " + saved.getId());
-            notificationClient.sendNotification(notification);
+            notificationProducer.sendNotification(notification);
             return ResponseEntity.status(502).body(saved);
         }
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<Reservation> get(@PathVariable UUID id) {
-        return repo.findById(id).map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
+        return repo.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 }

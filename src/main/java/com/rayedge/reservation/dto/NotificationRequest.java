@@ -1,16 +1,14 @@
 package com.rayedge.reservation.dto;
 
-public class NotificationRequest {
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.io.Serializable;
+
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+public class NotificationRequest implements Serializable {
     private String message;
-
-    public NotificationRequest() {
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
-    }
 }
